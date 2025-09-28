@@ -44,8 +44,9 @@ unemp_clean <- unemployment |>
     month = factor(month, levels = tolower(month.abb), labels = month.name))|>
   arrange(year, month)
 
-#merge datasets
+#merge data sets
 df = left_join(pols_clean, snp_clean, by = c("year", "month")) |>
   left_join(unemp_clean, by = c("year", "month"))
 ```
 
+#Problem 2
