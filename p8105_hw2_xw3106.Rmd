@@ -3,3 +3,49 @@ title: "p8105_hw2_xw3106"
 output: html_document
 ---
 
+```{r}
+#import library
+library(tidyverse)
+```
+
+#Problem 1
+```{r}
+#read files
+pols <- read_csv("fivethirtyeight_datasets/pols-month.csv")
+snp <- read_csv("fivethirtyeight_datasets/snp.csv")
+unemployment <- read_csv("fivethirtyeight_datasets/unemployment.csv")
+
+#clean data in pols-month.csv
+pols_clean <- pols |>
+  janitor::clean_names() |>
+  separate(mon, c("year", "month", "day"),convert= TRUE) |>
+  mutate(month = factor(month.name[month],levels = month.name),
+         president = if_else(prez_gop == 1, "gop", "dem")) |>
+  select(year, month, president, everything(),-prez_gop, -prez_dem, -day)|>
+  arrange(year, month)
+
+#clean data in snp.csv
+snp_clean <- snp |>
+  janitor::clean_names() |>
+  separate(date, c("month", "day", "year"), sep = "/", convert = TRUE) |>
+  mutate(month = factor(month.name[month],levels = month.name),
+         year = if_else(year <= 30, year + 2000, year + 1900)) |>
+  select(year, month, everything(), -day)|>
+  arrange(year, month)
+
+#clean data in unemployment.csv
+unemp_clean <- unemployment |>
+  janitor::clean_names() |>
+  pivot_longer(
+    jan:dec,
+    names_to  = "month",
+    values_to = "unemployment") |>
+  mutate(
+    month = factor(month, levels = tolower(month.abb), labels = month.name))|>
+  arrange(year, month)
+
+#merge datasets
+df = left_join(pols_clean, snp_clean, by = c("year", "month")) |>
+  left_join(unemp_clean, by = c("year", "month"))
+```
+
