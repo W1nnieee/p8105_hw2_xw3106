@@ -6,6 +6,7 @@ output: html_document
 ```{r}
 #import library
 library(tidyverse)
+library(readxl)
 ```
 
 #Problem 1
@@ -50,3 +51,42 @@ df = left_join(pols_clean, snp_clean, by = c("year", "month")) |>
 ```
 
 #Problem 2
+```{r}
+#read Mr. Trash Wheel sheet
+mr_trash_df = read_excel("202409 Trash Wheel Collection Data.xlsx",
+                sheet = "Mr. Trash Wheel",
+                range = "A2:M655")|>
+  janitor::clean_names()|>
+  filter(!is.na(dumpster))|>
+  mutate(sports_balls = as.integer(round(sports_balls)),
+         year = as.integer(year),
+         wheel = "Mr. Trash Wheel",
+         day = lubridate::day(date))|>
+  select(wheel,dumpster,year,month,day,everything(),-date)
+
+#read Professor Trash Wheel 
+professor_trash_df = read_excel("202409 Trash Wheel Collection Data.xlsx",
+                sheet = "Professor Trash Wheel",
+                range = "A2:L125")|>
+  janitor::clean_names()|>
+  filter(!is.na(dumpster))|>
+  mutate(wheel = "Professor Trash Wheel",
+         year = as.integer(year),
+         day = lubridate::day(date))|>
+  select(wheel,dumpster,year,month,day,everything(),-date)
+
+#read Gwynnda Trash Wheel 
+gwynnda_trash_df = read_excel("202409 Trash Wheel Collection Data.xlsx",
+                sheet = "Gwynnda Trash Wheel",
+                range = "A2:K266")|>
+  janitor::clean_names()|>
+  filter(!is.na(dumpster))|>
+  mutate(wheel = "Gwynnda Wheel",
+         year = as.integer(year),
+         day = lubridate::day(date))|>
+  select(wheel,dumpster,year,month,day,everything(),-date)
+
+#bind rows
+trashwheel_df = bind_rows(mr_trash_df, professor_trash_df, gwynnda_trash_df)
+```
+
