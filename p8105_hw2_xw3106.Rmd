@@ -98,6 +98,27 @@ glimpse(trashwheel_df)
 
 #problem 3
 ```{r}
+#read data
+zipcode = read.csv("zillow_data/Zip Codes.csv")
+zori = read.csv("zillow_data/Zip_zori_uc_sfrcondomfr_sm_month_NYC.csv")
 
+#handling with data
+zori_df = zori |>
+  pivot_longer(
+    X2015.01.31:X2024.08.31,
+    names_to = "date",
+    values_to = "rent"
+  )|>
+  janitor::clean_names()|>
+  rename(zip_code = region_name,
+         county = county_name)|>
+  mutate(county = word(county, 1, -2))|>
+  filter(!is.na(rent))
+
+zipcode_df = zipcode |>
+  janitor::clean_names()
+
+#merge data sets
+merged_df = left_join(zori_df, zipcode_df, by = c("zip_code", "county"))
 ```
 
