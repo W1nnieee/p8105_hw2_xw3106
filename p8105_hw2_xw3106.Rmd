@@ -52,6 +52,7 @@ df = left_join(pols_clean, snp_clean, by = c("year", "month")) |>
 
 #Problem 2
 ```{r}
+#Data Cleaning
 #read Mr. Trash Wheel sheet
 mr_trash_df = read_excel("202409 Trash Wheel Collection Data.xlsx",
                 sheet = "Mr. Trash Wheel",
@@ -88,5 +89,15 @@ gwynnda_trash_df = read_excel("202409 Trash Wheel Collection Data.xlsx",
 
 #bind rows
 trashwheel_df = bind_rows(mr_trash_df, professor_trash_df, gwynnda_trash_df)
+```
+
+```{r}
+#Data summary
+glimpse(trashwheel_df)
+```
+
+#problem 3
+```{r}
+
 ```
 
