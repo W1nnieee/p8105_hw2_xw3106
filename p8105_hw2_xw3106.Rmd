@@ -50,12 +50,12 @@ unemp_clean <- unemployment |>
 df = left_join(pols_clean, snp_clean, by = c("year", "month")) |>
   left_join(unemp_clean, by = c("year", "month"))
 ```
-
+`df` is the combined datasets that contains `r nrow(df)` observations of `r ncol(df)`variables. the range of year is from 1947 to 2015. the data set contains key variables like `year`,`month`, `president``unemployment`. 
 #Problem 2
 ```{r}
 #Data Cleaning
 #read Mr. Trash Wheel sheet
-mr_trash_df = read_excel("202409 Trash Wheel Collection Data.xlsx",
+mr_trash_df = read_excel("202509 Trash Wheel Collection Data.xlsx",
                 sheet = "Mr. Trash Wheel",
                 range = "A2:M655")|>
   janitor::clean_names()|>
@@ -67,7 +67,7 @@ mr_trash_df = read_excel("202409 Trash Wheel Collection Data.xlsx",
   select(wheel,dumpster,year,month,day,everything(),-date)
 
 #read Professor Trash Wheel 
-professor_trash_df = read_excel("202409 Trash Wheel Collection Data.xlsx",
+professor_trash_df = read_excel("202509 Trash Wheel Collection Data.xlsx",
                 sheet = "Professor Trash Wheel",
                 range = "A2:L125")|>
   janitor::clean_names()|>
@@ -78,21 +78,21 @@ professor_trash_df = read_excel("202409 Trash Wheel Collection Data.xlsx",
   select(wheel,dumpster,year,month,day,everything(),-date)
 
 #read Gwynnda Trash Wheel 
-gwynnda_trash_df = read_excel("202409 Trash Wheel Collection Data.xlsx",
-                sheet = "Gwynnda Trash Wheel",
+gwynns_trash_df = read_excel("202509 Trash Wheel Collection Data.xlsx",
+                sheet = "Gwynns Falls Trash Wheel",
                 range = "A2:K266")|>
   janitor::clean_names()|>
   filter(!is.na(weight_tons)& !is.na(dumpster))|>
-  mutate(wheel = "Gwynnda Wheel",
+  mutate(wheel = "Gwynns Wheel",
          year = as.integer(year),
          day = lubridate::day(date))|>
   select(wheel,dumpster,year,month,day,everything(),-date)
 
 #bind rows
-trashwheel_df = bind_rows(mr_trash_df, professor_trash_df, gwynnda_trash_df)
+trashwheel_df = bind_rows(mr_trash_df, professor_trash_df, gwynns_trash_df)
 ```
-`trashwheel_df` is the combined datasets for `mr_trash_df`,`professor_trash_df`,`gwynnda_trash_df`. It have `r nrow(trashwheel_df)`observations of `r ncol(trashwheel_df)` variables. This dataset includes `wheel`, `year`, `month`, `weight tons`. Also includes `<dbl>` variables such as `plastic_bottles`, `polystyrene`... to show the quantity of different type of trash. Variable `sports_balls` only exists in `mr_trash_wheel`.
-The total weight collected by professor trash wheel is `r sum(trashwheel_df |> filter(wheel == "Professor Trash Wheel") |> pull(weight_tons), na.rm = TRUE)`. In June of 2022, the gwynnda trash wheel picked up `r format(sum(trashwheel_df |> filter(wheel == "Gwynnda Wheel", year == 2022, month == "June") |> pull(cigarette_butts), na.rm = TRUE))` cigarette buts.
+`trashwheel_df` is the combined datasets for `mr_trash_df`,`professor_trash_df`,`gwynns_trash_df`. It have `r nrow(trashwheel_df)`observations of `r ncol(trashwheel_df)` variables. This dataset includes `wheel`, `year`, `month`, `weight tons`. Also includes `<dbl>` variables such as `plastic_bottles`, `polystyrene`... to show the quantity of different type of trash. Variable `sports_balls` only exists in `mr_trash_wheel`.
+The total weight collected by professor trash wheel is `r sum(trashwheel_df |> filter(wheel == "Professor Trash Wheel") |> pull(weight_tons), na.rm = TRUE)`. In June of 2022, the gwynnda trash wheel picked up `r format(sum(trashwheel_df |> filter(wheel == "Gwynns Wheel", year == 2022, month == "June") |> pull(cigarette_butts), na.rm = TRUE))` cigarette buts.
 
 #problem 3
 ```{r}
