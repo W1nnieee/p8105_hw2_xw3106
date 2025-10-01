@@ -1,12 +1,13 @@
 ---
 title: "p8105_hw2_xw3106"
-output: html_document
+output: github_document
 ---
 
 ```{r}
 #import library
 library(tidyverse)
 library(readxl)
+library(lubridate)
 ```
 
 #Problem 1
@@ -58,7 +59,7 @@ mr_trash_df = read_excel("202409 Trash Wheel Collection Data.xlsx",
                 sheet = "Mr. Trash Wheel",
                 range = "A2:M655")|>
   janitor::clean_names()|>
-  filter(!is.na(dumpster))|>
+  filter(!is.na(weight_tons)& !is.na(dumpster))|>
   mutate(sports_balls = as.integer(round(sports_balls)),
          year = as.integer(year),
          wheel = "Mr. Trash Wheel",
@@ -70,7 +71,7 @@ professor_trash_df = read_excel("202409 Trash Wheel Collection Data.xlsx",
                 sheet = "Professor Trash Wheel",
                 range = "A2:L125")|>
   janitor::clean_names()|>
-  filter(!is.na(dumpster))|>
+  filter(!is.na(weight_tons)& !is.na(dumpster))|>
   mutate(wheel = "Professor Trash Wheel",
          year = as.integer(year),
          day = lubridate::day(date))|>
@@ -81,7 +82,7 @@ gwynnda_trash_df = read_excel("202409 Trash Wheel Collection Data.xlsx",
                 sheet = "Gwynnda Trash Wheel",
                 range = "A2:K266")|>
   janitor::clean_names()|>
-  filter(!is.na(dumpster))|>
+  filter(!is.na(weight_tons)& !is.na(dumpster))|>
   mutate(wheel = "Gwynnda Wheel",
          year = as.integer(year),
          day = lubridate::day(date))|>
@@ -90,11 +91,8 @@ gwynnda_trash_df = read_excel("202409 Trash Wheel Collection Data.xlsx",
 #bind rows
 trashwheel_df = bind_rows(mr_trash_df, professor_trash_df, gwynnda_trash_df)
 ```
-
-```{r}
-#Data summary
-glimpse(trashwheel_df)
-```
+`trashwheel_df` is the combined datasets for `mr_trash_df`,`professor_trash_df`,`gwynnda_trash_df`. It have `r nrow(trashwheel_df)`observations of `r ncol(trashwheel_df)` variables. This dataset includes `wheel`, `year`, `month`, `weight tons`. Also includes `<dbl>` variables such as `plastic_bottles`, `polystyrene`... to show the quantity of different type of trash. Variable `sports_balls` only exists in `mr_trash_wheel`.
+The total weight collected by professor trash wheel is `r sum(trashwheel_df |> filter(wheel == "Professor Trash Wheel") |> pull(weight_tons), na.rm = TRUE)`. In June of 2022, the gwynnda trash wheel picked up `r format(sum(trashwheel_df |> filter(wheel == "Gwynnda Wheel", year == 2022, month == "June") |> pull(cigarette_butts), na.rm = TRUE))` cigarette buts.
 
 #problem 3
 ```{r}
@@ -116,9 +114,53 @@ zori_df = zori |>
   filter(!is.na(rent))
 
 zipcode_df = zipcode |>
-  janitor::clean_names()
+  select(-County.Code, -State.FIPS,-County.FIPS,File.Date) |>
+  janitor::clean_names() 
 
 #merge data sets
 merged_df = left_join(zori_df, zipcode_df, by = c("zip_code", "county"))
 ```
+Before merging the data, I decided to drop `county code`, `state fips`,`county_fips`, `files date`. Variable `county` is enough to cover since each county have their unique set value for `county code`, `state fips`,`county_fips`. It is unnecessary to keep the three variables. As for `file dates`, it does not give any meaning towards the data. 
+I merged the two data set based on `zip_code` and `county` because for some of the zipcode contains 2 county, in this way, it prevent duplication due to from joining many to many data.
 
+```{r}
+#clean merged data
+merged_df_clean <- merged_df |>
+  mutate(
+    date = str_remove(date, "^X"),
+    borough = case_match(
+      county,
+      "New York" ~ "Manhattan",
+      "Kings" ~ "Brooklyn",
+      "Queens" ~ "Queens",
+      "Bronx" ~ "Bronx",
+      "Richmond" ~ "Staten Island")
+    )|>
+  select(
+    zip_code, borough, neighborhood, 
+    date, rent, 
+    -state_name, -state, -city, -metro,-region_type,-region_id)
+```
+The tidy dataset contains `r nrow(merged_df_clean)`  observations of`r ncol(merged_df_clean)` variables. There are `r merged_df_clean |> summarise(n_distinct(zip_code))` unique zipcode included and `r merged_df_clean |> summarise(n_distinct(neighborhood))` unique neighborhood.
+
+```{r}
+#Finding missing zip
+missing_zip <- setdiff(
+  zipcode_df |> distinct(zip_code) |> pull(zip_code),
+  merged_df  |> distinct(zip_code) |> pull(zip_code)
+)
+```
+
+There are`r zipcode_df |> summarise(n_zip = n_distinct(zip_code))` unique zipcode in zipcode dataset, and `r merged_df_clean |> summarise(n_zip = n_distinct(zip_code))`in the Zillow Rental Price dataset. For example, zip code `r head(missing_zip, 10)` ... are missing. 
+The reason these zip code may not be included is because the corresponded area does not have any rental market activitys. For example, those areas might be industrial zone that does not have rental, or they might belong to the suburbs or suburban, or the zip code might not belong to any neighborhood. Some detailed exaple is `11430` is the zip code for JFK airport, `11371` is the zip for LGA airport. These airports does not belong to any neighborhood and cannot possibly have any rental activities.
+
+```{r echo=TRUE}
+price_drop <- merged_df_clean |>
+  filter(date %in% c("2020.01.31", "2021.01.31")) |>
+  pivot_wider(names_from = date, values_from = rent) |>
+  mutate(drop = `2020.01.31` - `2021.01.31`)|>
+  arrange(desc(drop))
+
+head(price_drop, 10)
+```
+From this table, we can see that the top fluctuated price areas are in Manhattan. Zipcode 10069 with NA value for neighborhood is in Upper West Side. Among these top ten drops, rental price declines are concentrated in Lower Manhattan and surrounding areas.
